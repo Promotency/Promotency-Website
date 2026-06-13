@@ -1,0 +1,353 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_URL")
+}
+
+// ─── Authentication & Users ─────────────────────────────────────────────────
+
+// Enums removed for SQLite compatibility
+model AdminUser {
+  id        String    @id @default(cuid())
+  name      String
+  email     String    @unique
+  password  String
+  role      String    @default("CONTENT_EDITOR")
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  auditLogs AuditLog[]
+}
+
+model AuditLog {
+  id        String    @id @default(cuid())
+  userId    String
+  user      AdminUser @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  details   String?
+  createdAt DateTime  @default(now())
+}
+
+// ─── Global Settings ─────────────────────────────────────────────────────────
+
+model SiteSettings {
+  id               String  @id @default(cuid())
+  siteName         String  @default("Promotency")
+  siteTagline      String  @default("Results-Driven Digital Marketing Agency")
+  siteDescription  String  @default("")
+  logoLight        String? // URL
+  logoDark         String? // URL
+  favicon          String?
+  // Contact
+  email            String  @default("contact@promotency.com")
+  phone            String  @default("")
+  address          String?
+  businessHours    String?
+  mapEmbedUrl      String?
+  // Social
+  facebook         String?
+  instagram        String?
+  twitter          String?
+  linkedin         String?
+  youtube          String?
+  whatsapp         String?
+  // SEO
+  defaultMetaTitle       String  @default("Promotency - Digital Marketing Agency")
+  defaultMetaDescription String  @default("")
+  googleAnalyticsId      String?
+  googleSearchConsole    String?
+  // Footer
+  footerCopyright  String  @default("© 2025 Promotency. All rights reserved.")
+  footerTagline    String?
+  // Navigation
+  ctaLabel         String  @default("Let's Talk")
+  updatedAt        DateTime @updatedAt
+}
+
+// ─── Home Page ────────────────────────────────────────────────────────────────
+
+model HeroContent {
+  id              String   @id @default(cuid())
+  headline        String   @default("We Build Brands That Drive Results")
+  subheadline     String   @default("Premium digital marketing, CGI ads, and performance campaigns that deliver measurable ROI")
+  primaryCtaLabel String   @default("Start Your Project")
+  primaryCtaUrl   String   @default("/contact")
+  secondaryCtaLabel String @default("View Our Work")
+  secondaryCtaUrl  String  @default("/performance")
+  backgroundImage String?
+  backgroundVideo String?
+  isVideoEnabled  Boolean  @default(false) // Deprecated: keep for backwards compatibility
+  backgroundType  String   @default("image") // image, video, youtube
+  youtubeUrl      String?
+  enableAudio     Boolean  @default(false)
+  autoPlay        Boolean  @default(true)
+  loopVideo       Boolean  @default(true)
+  overlayOpacity  Int      @default(60)
+  badgeText       String?  @default("Award-Winning Digital Agency")
+  updatedAt       DateTime @updatedAt
+}
+
+model Stat {
+  id        String   @id @default(cuid())
+  value     String   // e.g. "500+"
+  label     String   // e.g. "Clients Served"
+  suffix    String?  // e.g. "+"
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+}
+
+model CaseStudy {
+  id          String   @id @default(cuid())
+  title       String
+  client      String
+  industry    String?
+  metric      String   // e.g. "320% ROI Increase"
+  description String
+  image       String?
+  tags        String   @default("[]")
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ─── Services ────────────────────────────────────────────────────────────────
+
+model Service {
+  id          String          @id @default(cuid())
+  title       String
+  slug        String          @unique
+  icon        String?
+  shortDesc   String
+  description String          @default("")
+  image       String?
+  order       Int             @default(0)
+  isActive    Boolean         @default(true)
+  isFeatured  Boolean         @default(false)
+  // Sub-page sections
+  heroHeadline    String?
+  heroSubheadline String?
+  heroImage       String?
+  overview        String?
+  inclusions      String      @default("[]")
+  results         String?       // Array of {metric, description}
+  faqs            ServiceFAQ[]
+  procesSteps     ProcessStep[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model ServiceFAQ {
+  id        String   @id @default(cuid())
+  serviceId String
+  service   Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  question  String
+  answer    String
+  order     Int      @default(0)
+}
+
+model ProcessStep {
+  id          String   @id @default(cuid())
+  serviceId   String
+  service     Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  order       Int      @default(0)
+}
+
+// ─── Why Us ──────────────────────────────────────────────────────────────────
+
+model WhyUsEntry {
+  id          String   @id @default(cuid())
+  icon        String?
+  title       String
+  description String
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+}
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  name      String
+  role      String
+  bio       String?
+  photo     String?
+  linkedin  String?
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+}
+
+model Testimonial {
+  id        String   @id @default(cuid())
+  quote     String
+  name      String
+  company   String
+  role      String?
+  photo     String?
+  rating    Int      @default(5)
+  type      String   @default("text") // text, image, video, youtube
+  mediaUrl  String?
+  page      String   @default("why-us") // why-us, performance, home
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  isFeatured Boolean @default(false)
+  createdAt DateTime @default(now())
+}
+
+// ─── Performance Page ─────────────────────────────────────────────────────────
+
+model ClientLogo {
+  id       String  @id @default(cuid())
+  name     String
+  logo     String  // URL
+  website  String?
+  order    Int     @default(0)
+  isActive Boolean @default(true)
+}
+
+model PerformanceMetric {
+  id        String   @id @default(cuid())
+  value     String
+  label     String
+  context   String?
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+}
+
+// ─── Insights / Blog ─────────────────────────────────────────────────────────
+
+model InsightCategory {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  posts       InsightPost[]
+  createdAt   DateTime @default(now())
+}
+
+model InsightTag {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  posts     InsightPost[]
+  createdAt DateTime @default(now())
+}
+
+model InsightAuthor {
+  id        String   @id @default(cuid())
+  name      String
+  bio       String?
+  avatarUrl String?
+  posts     InsightPost[]
+  createdAt DateTime @default(now())
+}
+
+model InsightPost {
+  id             String   @id @default(cuid())
+  title          String
+  slug           String   @unique
+  excerpt        String?
+  body           String
+  featuredImage  String?
+  
+  categoryId     String?
+  category       InsightCategory? @relation(fields: [categoryId], references: [id])
+  
+  authorId       String?
+  author         InsightAuthor?   @relation(fields: [authorId], references: [id])
+  
+  tags           InsightTag[]
+  
+  isDraft        Boolean  @default(true)
+  metaTitle      String?
+  metaDesc       String?
+  openGraphImage String?
+  canonicalUrl   String?
+  
+  publishedAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// ─── Careers ─────────────────────────────────────────────────────────────────
+
+// Enums removed for SQLite compatibility
+model JobPosting {
+  id           String        @id @default(cuid())
+  title        String
+  department   String
+  location     String
+  type         String        // Full-time, Part-time, Remote, Contract
+  description  String
+  requirements String        @default("[]")
+  salary       String?
+  status       String        @default("OPEN")
+  applications JobApplication[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model JobApplication {
+  id           String     @id @default(cuid())
+  jobId        String
+  job          JobPosting @relation(fields: [jobId], references: [id])
+  fullName     String
+  email        String
+  phone        String?
+  resumeUrl    String?
+  coverLetter  String?
+  status       String     @default("new") // new, reviewing, shortlisted, rejected, hired
+  notes        String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+// ─── Contact Leads ────────────────────────────────────────────────────────────
+
+model Lead {
+  id              String   @id @default(cuid())
+  source          String   @default("contact") // contact, lets-talk
+  fullName        String
+  email           String
+  phone           String?
+  company         String?
+  // Let's Talk specific
+  businessType    String?
+  monthlyBudget   String?
+  interestedService String?
+  projectDetails  String?
+  timeline        String?
+  // Contact form
+  message         String?
+  status          String   @default("new") // new, contacted, qualified, converted, closed
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ─── Media Library ───────────────────────────────────────────────────────────
+
+model MediaAsset {
+  id           String   @id @default(cuid())
+  filename     String
+  originalName String
+  url          String
+  publicId     String?  // Cloudinary public ID
+  type         String   // image, video
+  size         Int?
+  width        Int?
+  height       Int?
+  altText      String?
+  folder       String?
+  usageCount   Int      @default(0)
+  createdAt    DateTime @default(now())
+}
